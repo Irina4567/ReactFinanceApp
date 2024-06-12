@@ -1,5 +1,3 @@
-// ~src/TodoApp.js
-
 import React, { useState, useEffect } from "react";
 import {
     collection,
@@ -7,7 +5,7 @@ import {
     onSnapshot,
     deleteDoc,
     doc,
-    updateDoc,
+    updateDoc
 } from "firebase/firestore";
 import db from "./firebase";
 import {
@@ -23,6 +21,7 @@ import {
     IconButton,
     ListItemSecondaryAction,
     Container,
+    Box
 } from "@material-ui/core";
 import {
     AddCircleOutlineRounded,
@@ -33,6 +32,7 @@ import {
 
 function TodoApp() {
     const [todos, setTodos] = useState([]);
+    const [limit, setLimit] = useState([]);
     const [newTodo, setNewTodo] = useState("");
     const [open, setOpen] = useState(false);
     const [update, setUpdate] = useState("");
@@ -47,8 +47,14 @@ function TodoApp() {
             setTodos(todos);
         });
 
+        const unsubscribeLimit = onSnapshot(doc(db, "limit", "limitFinance"), (snapshot) => {
+            const limitData = snapshot.data();
+            setLimit(limitData); // Assuming the field is named 'limit'
+        });
+
         return () => {
             unsubscribe();
+            unsubscribeLimit();
         };
     }, []);
 
@@ -61,8 +67,20 @@ function TodoApp() {
         setNewTodo("");
     };
 
+    const addLimit = async (e) => {
+        e.preventDefault();
+        await updateDoc(doc(db, "limit", "limitFinance"), {
+            value: limit,
+        });
+        setLimit([]);
+    };
+
     const deleteTodo = async (id) => {
         await deleteDoc(doc(db, "todos", id));
+    };
+
+    const deleteLimit = async (id) => {
+        await deleteDoc(doc(db, "limit", id));
     };
 
     const openUpdateDialog = (id, title) => {
@@ -106,6 +124,31 @@ function TodoApp() {
                 >
                     Add Todo
                 </Button>
+
+                <TextField
+                    variant="outlined"
+                    margin="normal"
+                    required
+                    fullWidth
+                    id="limit"
+                    label="Enter Limit"
+                    name="limit"
+                    autoFocus
+                    value={limit.value}
+                    onChange={(e) => setLimit(e.target.value)}
+                />
+
+                <Button
+                    type="submit"
+                    variant="contained"
+                    color="primary"
+                    fullWidth
+                    onClick={addLimit}
+                    disabled={!limit}
+                    startIcon={<AddCircleOutlineRounded />}
+                >
+                    Add limit
+                </Button>
             </form>
 
             <List dense={true}>
@@ -132,6 +175,25 @@ function TodoApp() {
                     </ListItem>
                 ))}
             </List>
+
+
+            <Box dense={true}>
+                {limit.value}
+                <IconButton
+                    edge="end"
+                    aria-label="Edit"
+                    onClick={() => openUpdateDialog(limit.id, limit.value)}
+                >
+                    <Edit />
+                </IconButton>
+                <IconButton
+                    edge="end"
+                    aria-label="delete"
+                    onClick={() => deleteLimit(limit.id)}
+                >
+                    <DeleteOutlineRounded />
+                </IconButton>
+            </Box>
 
             <Dialog open={open} onClose={() => setOpen(false)}>
                 <DialogTitle>Edit Todo</DialogTitle>
